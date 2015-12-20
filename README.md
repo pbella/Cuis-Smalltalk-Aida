@@ -25,7 +25,7 @@ If you then copy all of the packages (*.pck.st) from the above repos as well as 
 
 ````
 Smalltalk
-	Feature require: 'Network-Kernel'.
+	Feature require: 'Protocols-HTTP'.
 Smalltalk
 	Feature require: 'Aida'.
 AIDASite initialize
