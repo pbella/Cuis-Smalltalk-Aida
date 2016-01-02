@@ -1,5 +1,6 @@
-'From Cuis 4.1 of 12 December 2012 [latest update: #1600] on 20 February 2013 at 6:13:16 pm'!
+'From Cuis 4.2 of 25 July 2013 [latest update: #2595] on 29 December 2015 at 8:37:24.730211 pm'!
 'Description Please enter a description for this package '!
+!provides: 'AidaToDoExample' 1 2!
 !classDefinition: #ToDoList category: #'AidaToDoExample-Model'!
 Object subclass: #ToDoList
 	instanceVariableNames: 'owner tasks other'
@@ -8,6 +9,16 @@ Object subclass: #ToDoList
 	category: 'AidaToDoExample-Model'!
 !classDefinition: 'ToDoList class' category: #'AidaToDoExample-Model'!
 ToDoList class
+	instanceVariableNames: ''!
+
+!classDefinition: #ToDoTask category: #'AidaToDoExample-Model'!
+Object subclass: #ToDoTask
+	instanceVariableNames: 'id name description members deadline status parent'
+	classVariableNames: ''
+	poolDictionaries: ''
+	category: 'AidaToDoExample-Model'!
+!classDefinition: 'ToDoTask class' category: #'AidaToDoExample-Model'!
+ToDoTask class
 	instanceVariableNames: ''!
 
 !classDefinition: #ToDoListApp category: #'AidaToDoExample-App'!
@@ -20,16 +31,6 @@ WebApplication subclass: #ToDoListApp
 ToDoListApp class
 	instanceVariableNames: ''!
 
-!classDefinition: #ToDoLoginWidget category: #'AidaToDoExample-App'!
-WebWidget subclass: #ToDoLoginWidget
-	instanceVariableNames: 'username password'
-	classVariableNames: ''
-	poolDictionaries: ''
-	category: 'AidaToDoExample-App'!
-!classDefinition: 'ToDoLoginWidget class' category: #'AidaToDoExample-App'!
-ToDoLoginWidget class
-	instanceVariableNames: ''!
-
 !classDefinition: #ToDoRedirectApp category: #'AidaToDoExample-App'!
 WebApplication subclass: #ToDoRedirectApp
 	instanceVariableNames: ''
@@ -40,14 +41,14 @@ WebApplication subclass: #ToDoRedirectApp
 ToDoRedirectApp class
 	instanceVariableNames: ''!
 
-!classDefinition: #ToDoTask category: #'AidaToDoExample-Model'!
-Object subclass: #ToDoTask
-	instanceVariableNames: 'id name description members deadline status parent'
+!classDefinition: #ToDoLoginWidget category: #'AidaToDoExample-App'!
+WebWidget subclass: #ToDoLoginWidget
+	instanceVariableNames: 'username password'
 	classVariableNames: ''
 	poolDictionaries: ''
-	category: 'AidaToDoExample-Model'!
-!classDefinition: 'ToDoTask class' category: #'AidaToDoExample-Model'!
-ToDoTask class
+	category: 'AidaToDoExample-App'!
+!classDefinition: 'ToDoLoginWidget class' category: #'AidaToDoExample-App'!
+ToDoLoginWidget class
 	instanceVariableNames: ''!
 
 !classDefinition: #ToDoTaskWidget category: #'AidaToDoExample-App'!
@@ -74,16 +75,23 @@ Instance Variables
 
 !
 
+!ToDoTask commentStamp: '<historical>' prior: 0!
+ToDoTask describes a task to be completed.
+
+Instance Variables
+	id	<String> task number to uniquely identify a task
+	name	<String>	 short name of the task
+	description	<String>	description of description
+	deadline	<Date>	when this task should be completed
+	members	<Set>	additional users assigned to this task
+	status	<Symbol>	#pending or #complete
+	parent	<ToDoList>	a todo list where this task belongs
+!
+
 !ToDoListApp commentStamp: '<historical>' prior: 0!
 ToDoListApp is a presentation class for todo list of logged-in user. 
 
 In a pure MVC fashion it servers as a web presenentation (view and controler/actions) of a model object, in our case an instance of ToDoList. Such App have  view methods and action methods or blocks. In our case just #viewMain and no action methods, but we have many action blocks, like #onClickDo: .
-!
-
-!ToDoLoginWidget commentStamp: '<historical>' prior: 0!
-ToDoLoginWidget for a login popup with ajaxified fields to validate username and password entries immediatelly. 
-
-Note that the login button is nonactive/grayed out until a form is complete and valid, that is, until username and password are entered and correct. 
 !
 
 !ToDoRedirectApp commentStamp: '<historical>' prior: 0!
@@ -96,17 +104,10 @@ This is a so called standalone App and it is registered at Url '/todo' It is reg
 The whole installation procedure resides on the class initializing methods .
 !
 
-!ToDoTask commentStamp: '<historical>' prior: 0!
-ToDoTask describes a task to be completed.
+!ToDoLoginWidget commentStamp: '<historical>' prior: 0!
+ToDoLoginWidget for a login popup with ajaxified fields to validate username and password entries immediatelly. 
 
-Instance Variables
-	id	<String> task number to uniquely identify a task
-	name	<String>	 short name of the task
-	description	<String>	description of description
-	deadline	<Date>	when this task should be completed
-	members	<Set>	additional users assigned to this task
-	status	<Symbol>	#pending or #complete
-	parent	<ToDoList>	a todo list where this task belongs
+Note that the login button is nonactive/grayed out until a form is complete and valid, that is, until username and password are entered and correct. 
 !
 
 !ToDoTaskWidget commentStamp: '<historical>' prior: 0!
@@ -252,6 +253,12 @@ input.placeholder-text, textarea.placeholder-text  {
 ' 
 ! !
 
+!WebUser methodsFor: '*AidaToDoExample' stamp: 'janko 8/6/2011 19:43'!
+todoList
+	"For AidaToDoExample"
+	"a collection of todo tasks per day"
+	^self otherAt: #ToDoList ifAbsentPut: [ToDoList newFor: self].! !
+
 !ToDoList methodsFor: 'adding-removing'!
 addTask: aToDoTask
 	self tasks add: aToDoTask.
@@ -359,247 +366,6 @@ tasks
 newFor: aWebUser
 	
 	^super new owner: aWebUser! !
-
-!ToDoListApp methodsFor: 'views-elements'!
-actionLinksFor: aTask on: aListElement
-	| e |
-	e := WebElement new.
-	e add: (self completeLinkFor: aTask).
-	(e addTextSmall: ' | '; addNilLinkText: 'edit')
-		class: #'todo-actionlink';
-		onClickPopup: (ToDoTaskWidget newForEdit: aTask) thenUpdate: aListElement.
-	(e addTextSmall: ' | '; addLinkTo: '#' png: #buttonDeletePng title: 'Delete this task')
-		onClickPopup: 
-			(WebDialog newConfirm 
-				text: 'Do you really want to delete that task?';
-				ifTrue: 
-					[self observee deleteTask: aTask.
-					aListElement update]).		
-	^e! !
-
-!ToDoListApp methodsFor: 'views-elements'!
-completeLinkFor: aTask
-	"toogle complete status on click. If completed, it is grayed out and named 'uncomplete'"
-	| e |
-	e := WebElement newSpan.
-	aTask isPending ifTrue:
-		[(e addNilLinkText: 'complete')
-			class: #'todo-actionlink';
-			title: 'Click to complete this task';
-			onClickDo: 
-				[aTask setCompleted.
-				e updateWith: aTask] ].
-	aTask isCompleted ifTrue:
-		[(e addNilLinkText: 'completed')
-			class: #'todo-actionlink';
-			style: 'color: lightgray';
-			title: 'Click to uncomplete it';
-			onClickDo: 
-				[aTask setPending.
-				e updateWith: aTask] ].
-	^e! !
-
-!ToDoListApp methodsFor: 'views-elements'!
-creatorElementFor: aTask
-	^aTask creator == self user 
-		ifTrue: ['Me']
-		ifFalse: [aTask creator name]! !
-
-!ToDoListApp methodsFor: 'views'!
-ensureLibraries
-	"for date input in task open/edit popup"
-	self style ensureJsAndCssForCalendarInHeader.! !
-
-!ToDoListApp methodsFor: 'views-elements' stamp: 'janko 8/16/2011 16:06'!
-logonElement
-	| e |
-	e := WebElement new.
-	self session isLoggedIn  
-		ifFalse: 
-			[(e addNilLinkText: 'Sign-in')
-				onClickPopup: ToDoLoginWidget new ]
-		ifTrue: 
-			[e addTextSmall: self user nameSurname, ' | '.
-			(e addNilLinkText: 'Sign-out')
-				onClickDo: 
-					[self session logout.
-					self page redirectTo: self user todoList] ].
-	^e! !
-
-!ToDoListApp methodsFor: 'views-elements'!
-openLinkAndUpdate: aTaskElement
-	| e |
-	e := WebElement new.
-	(e addNilLinkText: 'Open new task')
-		onClickPopup:  
-			(ToDoTaskWidget newForAdd
-				onAnswerDo: [:newTask | 	
-					self observee addTask: newTask.
-					aTaskElement update]).
-	^e! !
-
-!ToDoListApp methodsFor: 'views-elements' stamp: 'janko 8/16/2011 16:07'!
-taskListElement
-	| e |
-	e := WebElement newDiv.
-	e add: (WebGrid new
-		columnNames: #(nil 'Name' 'Deadline' 'By' 'Members' nil);
-		columnAspects: #(nil name deadline nil memberNumber nil);
-		columnWidth: #(0.05 nil 0.1 0.1 0.1 0.3);
-		columnAlign: #(nil nil center center center right);
-		column: 4 viewBlock: [:task | self creatorElementFor: task];
-		column: 6 addBlock: [:task | self actionLinksFor: task on: e];
-		collection: self observee tasks;
-		setNumbering;
-		rowsOnPage: 20;
-		yourself).
-	^e! !
-
-!ToDoListApp methodsFor: 'views' stamp: 'janko 8/16/2011 16:14'!
-viewMain
-	| e taskList |
-	self ensureLibraries.
-	self title: (self user isGuest ifTrue: ['Guest'] ifFalse: ['My']), ' ToDo list'.
-	e := WebElement newDiv class: #'todo-list'. e table width: 1. "100%"
-	e cell colspan: 2; addTextH1: self title. e newRow.
-	taskList := self taskListElement.
-	e cell add: (self openLinkAndUpdate: taskList); addSpace.
-	e newCell align: #right; add: self logonElement. 
-	e newRow. e cell colspan: 2; add: taskList.
-	self add: e.
-	self observee onChangeDo: [taskList update] on: taskList app: self. 	"for real-time update of task list"! !
-
-!ToDoLoginWidget methodsFor: 'view' stamp: 'janko 1/26/2012 21:24'!
-build
-	self username: ''; password: ''.
-	self add: self loginElement.! !
-
-!ToDoLoginWidget methodsFor: 'view'!
-buttonsElement
-	| e |
-	e := WebElement new.
-	(e addButtonText: 'Sign in') class: #button;
-		disableUntilValid;   	"grayed out until all required fields entered and valid"
-		onSubmitDo: 
-			[self login.
-			self page redirectTo: self user todoList];  "redirect to just logged in user's task list"
-		onSubmitClose.
-	(e addButtonText: 'Cancel') class: #button;
-		onSubmitClose.
-	^e! !
-
-!ToDoLoginWidget methodsFor: 'view'!
-instructionsElement
-	| e |
-	e := WebElement new.
-	e addTextSmall: 'You can login as one of three users: easyworker/easyworker, hardworker/hardworker or lazyworker/lazyworker'.
-	^e! !
-
-!ToDoLoginWidget methodsFor: 'actions'!
-login
-	"both username and password must be valid in advance!!"
-	self session loginUserNamed: self username withPassword: self password. 
-	self password: ''.! !
-
-!ToDoLoginWidget methodsFor: 'view'!
-loginElement
-	| e ufield pfield |
-	e := WebElement newDiv class: #('todo-form' 'todo-nowide').  
-	e table width: 1 "100".
-	e cell colspan: 2; addTextH1: 'Sign in'; addBreak.
-	e cell add: self instructionsElement; addBreak; addBreak.
-	(e cell addText: 'Username: ') class: #label. (e cell addText: '*') class: #required.
-	ufield := (e cell addInputFieldAspect: #username for: self)
-		required;
-		validIfTrue: [:value | value isEmpty or: [self site securityManager existUserNamed: value] ];
-		errorText: 'This username does not exist';
-		onChangePost.
-	e cell add: ufield errorElement.  "which will show error if any"
-	(e cell addText: 'Password: ') class: #label. (e cell addText: '*') class: #required.
-	pfield := (e cell addInputFieldAspect: #password for: self)
-		required;
-		validIfTrue: [:value | value isEmpty or: 
-			[self site securityManager existUserNamed: self username withPassword: value]] ;
-		errorText: 'Password incorrect';
-		onChangePost.
-	e cell add: pfield errorElement. 
-	e newRow. e newCell width: 0.7 "70%"; align: #right; add: self buttonsElement.
-	^e! !
-
-!ToDoLoginWidget methodsFor: 'accessing'!
-password
-	password isNil ifTrue: [^''].
-	^password! !
-
-!ToDoLoginWidget methodsFor: 'accessing'!
-password: aString
-	password := aString! !
-
-!ToDoLoginWidget methodsFor: 'accessing'!
-username
-	username isNil ifTrue: [^''].
-	^username! !
-
-!ToDoLoginWidget methodsFor: 'accessing'!
-username: aString
-	username := aString! !
-
-!ToDoRedirectApp methodsFor: 'views'!
-viewMain
-	"just redirect to the Todo list of currently logged-in user. See ToDoListApp for more"
-	self redirectTo: self user todoList! !
-
-!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 7/24/2011 22:59'!
-initDefaultAccessRightsOn: anAIDASite
-	"all open for now"
-	"ToDoRedirectApp initDefaultAccessRightsOn: AIDASite default"
-	| smgr |
-	smgr := anAIDASite securityManager.
-	smgr allowViews: #(main) andUpdates: #(main)
-		for: smgr allUsersGroup on: ToDoRedirectApp.
-	smgr allowViews: #(main) andUpdates: #(main)
-		for: smgr allUsersGroup on: ToDoListApp.! !
-
-!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 8/16/2011 13:15'!
-initSomeToDoMembers
-	"few possible participants in advance to choose from"
-	"ToDoRedirectApp initSomeToDoMembers"
-	| site todoGroup user|
-	site := SwazooServer singleton siteNamed: 'aidademo'.
-	site isNil ifTrue: [^nil].
-	todoGroup := site securityManager groupNamed: 'ToDo'.
-	todoGroup isNil ifTrue: 
-		[todoGroup := site securityManager addGroup: (WebUserGroup new name: 'ToDo') ].
-	(site securityManager userNamed: 'easyworker') isNil ifTrue:
-		[user := WebUser new username: 'easyworker'; password: 'easyworker'; 
-			name: 'Easy'; surname: 'Worker'; yourself.
-		site securityManager addRegisteredUser: user.
-		todoGroup addUser: user].
-	(site securityManager userNamed: 'hardworker') isNil ifTrue:
-		[user := WebUser new username: 'hardworker'; password: 'hardworker'; 
-			name: 'Hard'; surname: 'Worker'; yourself.
-		site securityManager addRegisteredUser: user.
-		todoGroup addUser: user].
-	(site securityManager userNamed: 'lazyworker') isNil ifTrue:
-		[user := WebUser new username: 'lazyworker'; password: 'lazyworker'; 
-			name: 'Lazy'; surname: 'Worker'; yourself.
-		site securityManager addRegisteredUser: user.
-		todoGroup addUser: user].! !
-
-!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 7/24/2011 21:01'!
-initToDoExample
-	"on installing this package register ToDoExampleApp on Url '/todo', on aidademo website if exists"
-	"ToDoRedirectApp initToDoExample"
-	| site |
-	site := SwazooServer singleton siteNamed: 'aidademo'.
-	site isNil ifTrue: [^nil].
-	site register: ToDoRedirectApp onUrl: '/todo'.
-	self initDefaultAccessRightsOn: site.
-	self initSomeToDoMembers ! !
-
-!ToDoRedirectApp class methodsFor: 'class initialization'!
-initialize
-	self initToDoExample! !
 
 !ToDoTask methodsFor: 'changes'!
 announceChange
@@ -732,38 +498,319 @@ new
 	
 	^super basicNew initialize! !
 
+!ToDoListApp methodsFor: 'views-elements'!
+actionLinksFor: aTask on: aListElement
+	| e |
+	e := WebElement new.
+	e add: (self completeLinkFor: aTask).
+	(e addTextSmall: ' | '; addNilLinkText: 'edit')
+		class: #'todo-actionlink';
+		onClickPopup: (ToDoTaskWidget newForEdit: aTask) thenUpdate: aListElement.
+	(e addTextSmall: ' | '; addLinkTo: '#' png: #buttonDeletePng title: 'Delete this task')
+		onClickPopup: 
+			(WebDialog newConfirm 
+				text: 'Do you really want to delete that task?';
+				ifTrue: 
+					[self observee deleteTask: aTask.
+					aListElement update]).		
+	^e! !
+
+!ToDoListApp methodsFor: 'views-elements'!
+completeLinkFor: aTask
+	"toogle complete status on click. If completed, it is grayed out and named 'uncomplete'"
+	| e |
+	e := WebElement newSpan.
+	aTask isPending ifTrue:
+		[(e addNilLinkText: 'complete')
+			class: #'todo-actionlink';
+			title: 'Click to complete this task';
+			onClickDo: 
+				[aTask setCompleted.
+				e updateWith: aTask] ].
+	aTask isCompleted ifTrue:
+		[(e addNilLinkText: 'completed')
+			class: #'todo-actionlink';
+			style: 'color: lightgray';
+			title: 'Click to uncomplete it';
+			onClickDo: 
+				[aTask setPending.
+				e updateWith: aTask] ].
+	^e! !
+
+!ToDoListApp methodsFor: 'views-elements'!
+creatorElementFor: aTask
+	^aTask creator == self user 
+		ifTrue: ['Me']
+		ifFalse: [aTask creator name]! !
+
+!ToDoListApp methodsFor: 'views'!
+ensureLibraries
+	"for date input in task open/edit popup"
+	self style ensureJsAndCssForCalendarInHeader.! !
+
+!ToDoListApp methodsFor: 'views-elements' stamp: 'janko 8/16/2011 16:06'!
+logonElement
+	| e |
+	e := WebElement new.
+	self session isLoggedIn  
+		ifFalse: 
+			[(e addNilLinkText: 'Sign-in')
+				onClickPopup: ToDoLoginWidget new ]
+		ifTrue: 
+			[e addTextSmall: self user nameSurname, ' | '.
+			(e addNilLinkText: 'Sign-out')
+				onClickDo: 
+					[self session logout.
+					self page redirectTo: self user todoList] ].
+	^e! !
+
+!ToDoListApp methodsFor: 'views-elements'!
+openLinkAndUpdate: aTaskElement
+	| e |
+	e := WebElement new.
+	(e addNilLinkText: 'Open new task')
+		onClickPopup:  
+			(ToDoTaskWidget newForAdd
+				onAnswerDo: [:newTask | 	
+					self observee addTask: newTask.
+					aTaskElement update]).
+	^e! !
+
+!ToDoListApp methodsFor: 'as yet unclassified' stamp: 'pb 12/29/2015 19:42'!
+preferedUrl
+	"^ '/' , self owner nameSurname trimBlanks , '/todo'."
+	^ '/todo'! !
+
+!ToDoListApp methodsFor: 'views-elements' stamp: 'pb 12/29/2015 20:24'!
+taskListElement
+	| e |
+	e := WebElement newDiv.
+	e add:
+		(WebGrid new
+			columnNames: #(nil 'Name' 'Deadline' 'By' 'Members' nil );
+			columnAspects: #(nil #name #deadline nil #memberNumber nil );
+			columnWidth: #(0.05 nil 0.1 0.1 0.1 0.3 );
+			columnAlign: #(nil nil #center #center #center #right );
+			
+				column: 4
+				viewBlock: [ :task |
+					self creatorElementFor: task ];
+			
+				column: 6
+				addBlock: [ :task |
+					self
+						actionLinksFor: task
+						on: e elements first ];
+			collection: self observee tasks;
+			setNumbering;
+			rowsOnPage: 20;
+			yourself).
+	^ e.! !
+
+!ToDoListApp methodsFor: 'views' stamp: 'janko 8/16/2011 16:14'!
+viewMain
+	| e taskList |
+	self ensureLibraries.
+	self title: (self user isGuest ifTrue: ['Guest'] ifFalse: ['My']), ' ToDo list'.
+	e := WebElement newDiv class: #'todo-list'. e table width: 1. "100%"
+	e cell colspan: 2; addTextH1: self title. e newRow.
+	taskList := self taskListElement.
+	e cell add: (self openLinkAndUpdate: taskList); addSpace.
+	e newCell align: #right; add: self logonElement. 
+	e newRow. e cell colspan: 2; add: taskList.
+	self add: e.
+	self observee onChangeDo: [taskList update] on: taskList app: self. 	"for real-time update of task list"! !
+
+!ToDoRedirectApp methodsFor: 'views'!
+viewMain
+	"just redirect to the Todo list of currently logged-in user. See ToDoListApp for more"
+	self redirectTo: self user todoList! !
+
+!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 7/24/2011 22:59'!
+initDefaultAccessRightsOn: anAIDASite
+	"all open for now"
+	"ToDoRedirectApp initDefaultAccessRightsOn: AIDASite default"
+	| smgr |
+	smgr := anAIDASite securityManager.
+	smgr allowViews: #(main) andUpdates: #(main)
+		for: smgr allUsersGroup on: ToDoRedirectApp.
+	smgr allowViews: #(main) andUpdates: #(main)
+		for: smgr allUsersGroup on: ToDoListApp.! !
+
+!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 8/16/2011 13:15'!
+initSomeToDoMembers
+	"few possible participants in advance to choose from"
+	"ToDoRedirectApp initSomeToDoMembers"
+	| site todoGroup user|
+	site := SwazooServer singleton siteNamed: 'aidademo'.
+	site isNil ifTrue: [^nil].
+	todoGroup := site securityManager groupNamed: 'ToDo'.
+	todoGroup isNil ifTrue: 
+		[todoGroup := site securityManager addGroup: (WebUserGroup new name: 'ToDo') ].
+	(site securityManager userNamed: 'easyworker') isNil ifTrue:
+		[user := WebUser new username: 'easyworker'; password: 'easyworker'; 
+			name: 'Easy'; surname: 'Worker'; yourself.
+		site securityManager addRegisteredUser: user.
+		todoGroup addUser: user].
+	(site securityManager userNamed: 'hardworker') isNil ifTrue:
+		[user := WebUser new username: 'hardworker'; password: 'hardworker'; 
+			name: 'Hard'; surname: 'Worker'; yourself.
+		site securityManager addRegisteredUser: user.
+		todoGroup addUser: user].
+	(site securityManager userNamed: 'lazyworker') isNil ifTrue:
+		[user := WebUser new username: 'lazyworker'; password: 'lazyworker'; 
+			name: 'Lazy'; surname: 'Worker'; yourself.
+		site securityManager addRegisteredUser: user.
+		todoGroup addUser: user].! !
+
+!ToDoRedirectApp class methodsFor: 'class initialization' stamp: 'janko 7/24/2011 21:01'!
+initToDoExample
+	"on installing this package register ToDoExampleApp on Url '/todo', on aidademo website if exists"
+	"ToDoRedirectApp initToDoExample"
+	| site |
+	site := SwazooServer singleton siteNamed: 'aidademo'.
+	site isNil ifTrue: [^nil].
+	site register: ToDoRedirectApp onUrl: '/todo'.
+	self initDefaultAccessRightsOn: site.
+	self initSomeToDoMembers ! !
+
+!ToDoRedirectApp class methodsFor: 'class initialization'!
+initialize
+	self initToDoExample! !
+
+!ToDoLoginWidget methodsFor: 'view' stamp: 'janko 1/26/2012 21:24'!
+build
+	self username: ''; password: ''.
+	self add: self loginElement.! !
+
+!ToDoLoginWidget methodsFor: 'view'!
+buttonsElement
+	| e |
+	e := WebElement new.
+	(e addButtonText: 'Sign in') class: #button;
+		disableUntilValid;   	"grayed out until all required fields entered and valid"
+		onSubmitDo: 
+			[self login.
+			self page redirectTo: self user todoList];  "redirect to just logged in user's task list"
+		onSubmitClose.
+	(e addButtonText: 'Cancel') class: #button;
+		onSubmitClose.
+	^e! !
+
+!ToDoLoginWidget methodsFor: 'view'!
+instructionsElement
+	| e |
+	e := WebElement new.
+	e addTextSmall: 'You can login as one of three users: easyworker/easyworker, hardworker/hardworker or lazyworker/lazyworker'.
+	^e! !
+
+!ToDoLoginWidget methodsFor: 'actions'!
+login
+	"both username and password must be valid in advance!!"
+	self session loginUserNamed: self username withPassword: self password. 
+	self password: ''.! !
+
+!ToDoLoginWidget methodsFor: 'view'!
+loginElement
+	| e ufield pfield |
+	e := WebElement newDiv class: #('todo-form' 'todo-nowide').  
+	e table width: 1 "100".
+	e cell colspan: 2; addTextH1: 'Sign in'; addBreak.
+	e cell add: self instructionsElement; addBreak; addBreak.
+	(e cell addText: 'Username: ') class: #label. (e cell addText: '*') class: #required.
+	ufield := (e cell addInputFieldAspect: #username for: self)
+		required;
+		validIfTrue: [:value | value isEmpty or: [self site securityManager existUserNamed: value] ];
+		errorText: 'This username does not exist';
+		onChangePost.
+	e cell add: ufield errorElement.  "which will show error if any"
+	(e cell addText: 'Password: ') class: #label. (e cell addText: '*') class: #required.
+	pfield := (e cell addInputFieldAspect: #password for: self)
+		required;
+		validIfTrue: [:value | value isEmpty or: 
+			[self site securityManager existUserNamed: self username withPassword: value]] ;
+		errorText: 'Password incorrect';
+		onChangePost.
+	e cell add: pfield errorElement. 
+	e newRow. e newCell width: 0.7 "70%"; align: #right; add: self buttonsElement.
+	^e! !
+
+!ToDoLoginWidget methodsFor: 'accessing'!
+password
+	password isNil ifTrue: [^''].
+	^password! !
+
+!ToDoLoginWidget methodsFor: 'accessing'!
+password: aString
+	password := aString! !
+
+!ToDoLoginWidget methodsFor: 'accessing'!
+username
+	username isNil ifTrue: [^''].
+	^username! !
+
+!ToDoLoginWidget methodsFor: 'accessing'!
+username: aString
+	username := aString! !
+
 !ToDoTaskWidget methodsFor: 'view' stamp: 'janko 1/26/2012 21:24'!
 build
 	self inAddMode ifTrue: [self newTask]. 
 	self add: self editElement.! !
 
-!ToDoTaskWidget methodsFor: 'view-edit'!
+!ToDoTaskWidget methodsFor: 'view-edit' stamp: 'pb 12/29/2015 20:29'!
 editElement
 	| e mmbrs |
-	e := WebElement newDiv class: #'todo-form'.  
-	e table width: 1 "100". e cell colspan: 2.
-	e cell add: self titleElement; addBreak.
-	(e cell addText: 'Name: ') class: #label. (e cell addText: '*') class: #required.
-	(e cell addInputFieldAspect: #name for: self task size: 20)
+	e := WebElement newDiv class: #'todo-form'.
+	e table width: 1.
+	"100"
+	e cell colspan: 2.
+	e cell
+		add: self titleElement;
+		addBreak.
+	(e cell addText: 'Name: ') class: #label.
+	(e cell addText: '*') class: #required.
+	(e cell
+		addInputFieldAspect: #name
+		for: self task
+		size: 20)
 		placeHolder: 'Short task name';
 		required;
 		onChangePost.
 	(e cell addText: 'Description: ') class: #label.
-	(e cell addTextAreaAspect: #description for: self task size: 20@2)
+	(e cell
+		addTextAreaAspect: #description
+		for: self task
+		size: 20 @ 2)
 		placeHolder: 'What to do';
 		onChangePost.
-	(e cell addText: 'Deadline: ') class: #label; addBreak.
-	(e cell addDateInputFieldAspect: #deadline for: self task) 
+	(e cell addText: 'Deadline: ')
+		class: #label;
+		addBreak.
+	(e cell
+		addDateInputFieldAspect: #deadline
+		for: self task)
 		class: #datefield;
 		onChangePost.
-	e newRow. (e cell addText: 'Members: ') class: #label.
+	e newRow.
+	(e cell addText: 'Members: ') class: #label.
 	mmbrs := self membersElement.
+	"FIXME
+		"
 	(e cell addNilLinkText: 'edit')
-		onClickPopup: self membersEditPopup thenUpdate: mmbrs.
-	e cell addBreak; add: mmbrs. e newRow. 
-	(e cell addText: '*') class: #required. e cell addTextSmall: ' indicates a required field'.
-	e newCell width: 0.5 "50%"; align: #right; add: self formButtons.
-	^e! !
+		onClickPopup: self membersEditPopup thenUpdate: mmbrs elements first.
+	e cell
+		addBreak;
+		add: mmbrs.
+	e newRow.
+	(e cell addText: '*') class: #required.
+	e cell addTextSmall: ' indicates a required field'.
+	e newCell
+		width: 0.5;
+		align: #right;
+		add: self formButtons.
+	"50%"
+	^ e.! !
 
 !ToDoTaskWidget methodsFor: 'view-edit'!
 formButtons
@@ -812,14 +859,21 @@ membersEditPopup
 		onSubmitClose.
 	^e! !
 
-!ToDoTaskWidget methodsFor: 'view-edit'!
+!ToDoTaskWidget methodsFor: 'view-edit' stamp: 'pb 12/29/2015 20:28'!
 membersElement
 	| e |
 	e := WebElement new.
-	self task membersSorted do: [:member |
+	e newDiv.
+	self task membersSorted do: [ :member |
 		e addText: member name.
-		member = self task membersSorted last ifFalse: [e addText: ', '] ].
-	^e! !
+		member = self task membersSorted last ifFalse: [ e addText: ', ' ]].
+	^ e.! !
+
+!ToDoTaskWidget methodsFor: 'as yet unclassified' stamp: 'pb 12/29/2015 20:37'!
+membersElement: element
+	"FIXME - not sure how this is supposed to work as this method is being called but was missing..."
+	self halt.
+	^ self.! !
 
 !ToDoTaskWidget methodsFor: 'private'!
 mode
@@ -867,10 +921,4 @@ newForEdit: aToDoTask
 		mode: #edit;
 		task: aToDoTask;
 		initialize "also build"! !
-
-!WebUser methodsFor: '*AidaToDoExample' stamp: 'janko 8/6/2011 19:43'!
-todoList
-	"For AidaToDoExample"
-	"a collection of todo tasks per day"
-	^self otherAt: #ToDoList ifAbsentPut: [ToDoList newFor: self].! !
 ToDoRedirectApp initialize!
